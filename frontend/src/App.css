@@ -1,0 +1,53 @@
+/* App.css */
+
+/* Centralizar o conteúdo da aplicação */
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+/* Estilo para o contêiner de login e mensagem de erro */
+.login-container,
+.error-message {
+  margin-bottom: 20px;
+}
+
+/* Estilo para o botão */
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Estilo para a imagem */
+img {
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+}
+
+/* Estilo para listas e itens */
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  margin: 5px 0;
+}
+
+/* Estilo para a piada e categorias */
+.piada,
+.categorias,
+.busca {
+  margin: 20px 0;
+}
