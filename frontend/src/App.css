@@ -1,23 +1,33 @@
-/* App.css */
-
-/* Centralizar o conteúdo da aplicação */
 .App {
   text-align: center;
-  padding: 20px;
+  font-family: Arial, sans-serif;
 }
 
-/* Estilo para o contêiner de login e mensagem de erro */
-.login-container,
-.error-message {
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.login-container img {
   margin-bottom: 20px;
 }
 
-/* Estilo para o botão */
+input {
+  margin: 10px;
+  padding: 10px;
+  width: 250px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 button {
+  margin: 10px;
   padding: 10px 20px;
-  font-size: 16px;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   background-color: #007bff;
   color: white;
   cursor: pointer;
@@ -27,27 +37,16 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* Estilo para a imagem */
-img {
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto;
-  display: block;
+.error-message {
+  color: red;
 }
 
-/* Estilo para listas e itens */
-ul {
-  list-style-type: none;
-  padding: 0;
+.piada, .inserir-piada, .busca-piada, .busca-keyword {
+  margin: 20px auto;
+  width: 80%;
 }
 
-li {
-  margin: 5px 0;
-}
-
-/* Estilo para a piada e categorias */
-.piada,
-.categorias,
-.busca {
-  margin: 20px 0;
+.resultado-busca p {
+  border-bottom: 1px solid #eee;
+  padding: 10px;
 }

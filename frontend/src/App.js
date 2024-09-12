@@ -1,183 +1,276 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import './App.css'; // Importe o arquivo CSS para estilização
+import './App.css';
 
 function App() {
-    // Estados de controle da aplicação
-    const [piada, setPiada] = useState('');
-    const [categorias, setCategorias] = useState([]);
-    const [keyword, setKeyword] = useState('');
-    const [resultadoBusca, setResultadoBusca] = useState([]);
-    const [erro, setErro] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [token, setToken] = useState('');
-    const [categoriasVisiveis, setCategoriasVisiveis] = useState(false); // Novo estado para visibilidade das categorias
+  const [piada, setPiada] = useState('');
+  const [categorias, setCategorias] = useState([]);
+  const [mostrarCategorias, setMostrarCategorias] = useState(false);
+  const [novaCategoria, setNovaCategoria] = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [resultadoBuscaCategoria, setResultadoBuscaCategoria] = useState([]);
+  const [resultadoBuscaKeyword, setResultadoBuscaKeyword] = useState([]);
+  const [erro, setErro] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [token, setToken] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [buscaFeitaCategoria, setBuscaFeitaCategoria] = useState(false);
+  const [buscaFeitaKeyword, setBuscaFeitaKeyword] = useState(false);
+  const [mensagemNenhumResultadoCategoria, setMensagemNenhumResultadoCategoria] = useState(false);
+  const [mensagemNenhumResultadoKeyword, setMensagemNenhumResultadoKeyword] = useState(false);
 
-    // Função de login
-    const login = () => {
-      axios.post('http://localhost:3001/login', { username, password })
-          .then(response => {
-              if (response.status === 200 && response.data.success) {
-                  setIsLoggedIn(true);
-                  setToken(response.data.token);
-                  setErro('');
-              } else {
-                  setErro('Credenciais inválidas');
-              }
-          })
-          .catch(error => {
-              console.error("Erro ao realizar login: ", error);
-              setErro('Erro ao realizar login. Por favor, tente novamente mais tarde.');
-          });
-    };
+  useEffect(() => {
+    if (isLoggedIn) {
+      axios.get('https://api.chucknorris.io/jokes/categories')
+        .then(response => {
+          setCategorias(response.data || []);
+          setErro('');
+        })
+        .catch(error => {
+          console.error("Erro ao obter categorias: ", error);
+          setErro('Erro ao obter categorias. Por favor, tente novamente mais tarde.');
+        });
+    }
+  }, [isLoggedIn]);
 
-    const getPiadaAleatoria = () => {
-      if (!isLoggedIn) {
-          setErro('Por favor, faça login para acessar essa funcionalidade.');
-          return;
-      }
-  
-      axios.get('http://localhost:3001/piadas', {
-          headers: { 'Authorization': `Bearer ${token}` }
-      })
+  const login = useCallback(() => {
+    axios.post('https://localhost:3001/login', { username, password })
       .then(response => {
-          console.log(response);
-          if (response.data.piadas) {
-              setPiada(response.data.piadas);
-              setErro('');
-          } else {
-              setErro('Erro ao obter piada. Resposta inesperada.');
-          }
+        if (response.status === 200 && response.data.success) {
+          setIsLoggedIn(true);
+          setToken(response.data.token);
+          setErro('');
+          setResultadoBuscaCategoria([]);
+          setResultadoBuscaKeyword([]);
+          setBuscaFeitaCategoria(false);
+          setBuscaFeitaKeyword(false);
+          setMensagemNenhumResultadoCategoria(false);
+          setMensagemNenhumResultadoKeyword(false);
+        } else {
+          setErro('Credenciais inválidas');
+        }
       })
       .catch(error => {
-          console.error("Erro ao obter piada: ", error);
-          setErro('Erro ao obter piada. Por favor, tente novamente mais tarde.');
+        console.error("Erro ao realizar login: ", error);
+        setErro('Erro ao realizar login. Por favor, tente novamente mais tarde.');
       });
+  }, [username, password]);
+
+  const register = useCallback(() => {
+    axios.post('https://localhost:3001/register', { username: newUsername, password: newPassword })
+      .then(response => {
+        if (response.status === 200 && response.data.success) {
+          setIsRegistering(false);
+          setErro('Usuário registrado com sucesso! Você pode fazer login agora.');
+        } else {
+          setErro('Erro ao registrar usuário.');
+        }
+      })
+      .catch(error => {
+        console.error("Erro ao registrar usuário: ", error);
+        setErro('Erro ao registrar usuário. Por favor, tente novamente mais tarde.');
+      });
+  }, [newUsername, newPassword]);
+
+  const getPiadaAleatoria = useCallback(() => {
+    if (!isLoggedIn) {
+      setErro('Por favor, faça login para acessar essa funcionalidade.');
+      return;
+    }
+
+    axios.get('https://api.chucknorris.io/jokes/random')
+      .then(response => {
+        setPiada(response.data.value);
+        setErro('');
+      })
+      .catch(error => {
+        console.error("Erro ao obter piada: ", error);
+        setErro('Erro ao obter piada. Por favor, tente novamente mais tarde.');
+      });
+  }, [isLoggedIn]);
+
+  const inserirPiada = useCallback(() => {
+    if (!isLoggedIn) {
+      setErro('Por favor, faça login para adicionar uma piada.');
+      return;
+    }
+
+    const novaPiada = prompt('Digite a nova piada:');
+    if (!novaPiada) {
+      setErro('Piada não pode ser vazia.');
+      return;
+    }
+
+    axios.post('https://localhost:3001/piadas', { content: novaPiada }, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(response => {
+        if (response.data.success) {
+          setErro('Piada adicionada com sucesso!');
+          setPiada('');
+          getPiadaAleatoria();
+        } else {
+          setErro('Erro ao adicionar piada.');
+        }
+      })
+      .catch(error => {
+        console.error("Erro ao adicionar piada: ", error);
+        setErro('Erro ao adicionar piada. Por favor, tente novamente mais tarde.');
+      });
+  }, [isLoggedIn, token, getPiadaAleatoria]);
+
+  const buscarPiadasPorCategoria = useCallback(() => {
+    if (!isLoggedIn) {
+      setErro('Por favor, faça login para buscar piadas.');
+      return;
+    }
+
+    setBuscaFeitaCategoria(true);
+
+    axios.get(`https://api.chucknorris.io/jokes/random?category=${novaCategoria}`)
+      .then(response => {
+        const resultado = [response.data];
+        setResultadoBuscaCategoria(resultado);
+        setMensagemNenhumResultadoCategoria(resultado.length === 0);
+        setErro('');
+      })
+      .catch(error => {
+        console.error("Erro ao buscar piadas: ", error);
+        setErro('Erro ao buscar piadas. Por favor, tente novamente mais tarde.');
+      });
+  }, [isLoggedIn, novaCategoria]);
+
+  const buscarPiadaPorKeyword = useCallback(() => {
+    if (!isLoggedIn) {
+      setErro('Por favor, faça login para buscar piadas.');
+      return;
+    }
+
+    setBuscaFeitaKeyword(true);
+
+    axios.get(`https://api.chucknorris.io/jokes/search?query=${keyword}`)
+      .then(response => {
+        const resultado = response.data.result || [];
+        setResultadoBuscaKeyword(resultado);
+        setMensagemNenhumResultadoKeyword(resultado.length === 0);
+        setErro('');
+      })
+      .catch(error => {
+        console.error("Erro ao buscar piadas: ", error);
+        setErro('Erro ao buscar piadas. Por favor, tente novamente mais tarde.');
+      });
+  }, [isLoggedIn, keyword]);
+
+  const limparResultadosCategoria = () => {
+    setResultadoBuscaCategoria([]);
+    setBuscaFeitaCategoria(false);
+    setMensagemNenhumResultadoCategoria(false);
   };
 
-    const getCategorias = () => {
-        if (!isLoggedIn) {
-            setErro('Por favor, faça login para acessar essa funcionalidade.');
-            return;
-        }
+  const limparResultadosKeyword = () => {
+    setResultadoBuscaKeyword([]);
+    setBuscaFeitaKeyword(false);
+    setMensagemNenhumResultadoKeyword(false);
+  };
 
-        if (categoriasVisiveis) {
-            // Se as categorias estão visíveis, esconda-as
-            setCategorias([]);
-            setCategoriasVisiveis(false);
-        } else {
-            // Caso contrário, obtenha as categorias
-            axios.get('https://api.chucknorris.io/jokes/categories')
-                .then(response => {
-                    setCategorias(response.data);
-                    setCategoriasVisiveis(true);
-                    setErro('');
-                })
-                .catch(error => {
-                    console.error("Erro ao obter categorias: ", error);
-                    setErro('Erro ao obter categorias. Por favor, tente novamente mais tarde.');
-                });
-        }
-    };
+  const toggleCategorias = () => {
+    setMostrarCategorias(prevState => !prevState);
+  };
 
-    const buscarPorPalavraChave = () => {
-        if (!isLoggedIn) {
-            setErro('Por favor, faça login para acessar essa funcionalidade.');
-            return;
-        }
-
-        if (keyword === '') {
-            setErro('Por favor, digite uma palavra-chave para buscar.');
-            return;
-        }
-
-        axios.get(`https://api.chucknorris.io/jokes/search?query=${keyword}`)
-            .then(response => {
-                if (response.data.result.length === 0) {
-                    setResultadoBusca(['Nenhuma piada encontrada com essa palavra-chave.']);
-                    setErro('');
-                    return;
-                }
-
-                const piadasEncontradas = response.data.result.map(piada => piada.value);
-                setResultadoBusca(piadasEncontradas);
-                setErro('');
-            })
-            .catch(error => {
-                console.error("Erro ao buscar por palavra-chave: ", error);
-                setErro('Erro ao buscar por palavra-chave. Por favor, tente novamente mais tarde.');
-            });
-    };
-
-    return (
-        <div className="App">
-            {!isLoggedIn ? (
-                <div className="login-container">
-                    <h3>Login</h3>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        placeholder="Usuário"
-                    />
-                    <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Senha"
-                    />
-                    <button onClick={login}>Login</button>
-                    {erro && <p className="error-message">{erro}</p>}
-                </div>
-            ) : (
-                <>
-                    <div className="image-container">
-                        <img src="ChuckNorris.png" alt="Chuck Norris" />
-                    </div>
-                    <div className="piada">
-                        <h1>Piadas do Chuck Norris</h1>
-                        <p>Clique no botão abaixo para receber uma piada</p>
-                        <button onClick={getPiadaAleatoria}>Piada aleatória</button>
-                        <p>{piada}</p>
-                    </div>
-                    <div className="categorias">
-                        <h3>Categorias</h3>
-                        <p>Para ver as categorias das piadas, clique no botão abaixo</p>
-                        <button onClick={getCategorias}>
-                            {categoriasVisiveis ? 'Esconder Categorias' : 'Categorias'}
-                        </button>
-                        {categoriasVisiveis && (
-                            <ul>
-                                {categorias.map((categoria, index) => (
-                                    <li key={index}>{categoria}</li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                    <div className="busca">
-                        <h3>Busca por palavra-chave</h3>
-                        <input
-                            type="text"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            placeholder="Digite uma palavra-chave"
-                        />
-                        <button onClick={buscarPorPalavraChave}>Buscar</button>
-                        {resultadoBusca.length > 0 && (
-                            <ul>
-                                {resultadoBusca.map((piada, index) => (
-                                    <li key={index}>{piada}</li>
-                                ))}
-                            </ul>
-                        )}
-                    </div>
-                </>
-            )}
-            {erro && <p className="error-message">{erro}</p>}
+  return (
+    <div className="App">
+      {!isLoggedIn ? (
+        <div className="login-container">
+          <img src="ChuckNorris.png" alt="Chuck Norris" height="200" width="400" />
+          {!isRegistering ? (
+            <>
+              <h2>Login</h2>
+              <input type="text" placeholder="Usuário" value={username} onChange={(e) => setUsername(e.target.value)} />
+              <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button onClick={login}>Entrar</button>
+              <button onClick={() => setIsRegistering(true)}>Registrar</button>
+              {erro && <p className="error-message">{erro}</p>}
+            </>
+          ) : (
+            <>
+              <h2>Registrar</h2>
+              <input type="text" placeholder="Novo Usuário" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} />
+              <input type="password" placeholder="Nova Senha" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+              <button onClick={register}>Registrar</button>
+              <button onClick={() => setIsRegistering(false)}>Voltar</button>
+              {erro && <p className="error-message">{erro}</p>}
+            </>
+          )}
         </div>
-    );
+      ) : (
+        <>
+          <div className="login-container">
+            <img src="ChuckNorris.png" alt="Chuck Norris" height="200" width="400" />
+          </div>
+
+          <h2>Bem-vindo, {username}!</h2>
+          <div className="piada">
+            <button onClick={getPiadaAleatoria}>Piada Aleatória</button>
+            <p>{piada}</p>
+          </div>
+
+          <div className="inserir-piada">
+            <button onClick={inserirPiada}>Adicionar Piada</button>
+          </div>
+
+          <div className="categorias">
+            <button onClick={toggleCategorias}>
+              {mostrarCategorias ? 'Ocultar Categorias' : 'Mostrar Categorias'}
+            </button>
+            {mostrarCategorias && (
+              <div className="categorias-lista">
+                {categorias.map((categoria, index) => (
+                  <p key={index}>{categoria}</p>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="busca-piada">
+            <h3>Buscar Piada por Categoria</h3>
+            <input type="text" placeholder="Digite a categoria" value={novaCategoria} onChange={(e) => setNovaCategoria(e.target.value)} />
+            <button onClick={buscarPiadasPorCategoria}>Buscar</button>
+            <button onClick={limparResultadosCategoria}>Limpar</button>
+            <div className="resultado-busca">
+              {resultadoBuscaCategoria.length > 0 ? (
+                resultadoBuscaCategoria.map((piada, index) => (
+                  <p key={index}>{piada.value}</p>
+                ))
+              ) : (
+                mensagemNenhumResultadoCategoria && <p>Nenhum resultado encontrado.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="busca-keyword">
+            <h3>Buscar Piada por Palavra-chave</h3>
+            <input type="text" placeholder="Digite a palavra-chave" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+            <button onClick={buscarPiadaPorKeyword}>Buscar</button>
+            <button onClick={limparResultadosKeyword}>Limpar</button>
+            <div className="resultado-busca">
+              {resultadoBuscaKeyword.length > 0 ? (
+                resultadoBuscaKeyword.map((piada, index) => (
+                  <p key={index}>{piada.value}</p>
+                ))
+              ) : (
+                mensagemNenhumResultadoKeyword && <p>Nenhum resultado encontrado.</p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+      {erro && <p className="error-message">{erro}</p>}
+    </div>
+  );
 }
 
 export default App;
